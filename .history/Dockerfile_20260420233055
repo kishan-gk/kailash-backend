@@ -1,19 +1,26 @@
 FROM php:8.2-cli
 
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    git unzip curl libzip-dev zip libpq-dev \
+    git unzip curl libzip-dev zip \
     && docker-php-ext-install zip pdo pdo_pgsql pgsql
 
+# Install composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
+
+# Copy project
 COPY . .
 
+# Install dependencies (optimized)
 RUN composer install --no-dev --optimize-autoloader
 
+# Permissions fix
 RUN chmod -R 775 storage
 RUN chmod -R 775 bootstrap/cache
 
 EXPOSE 10000
 
+# Run migrations + start server
 CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=10000
